@@ -287,8 +287,17 @@ Winners withdraw their proportional share of the losing pool.
 MARKET_CONTRACT=<address> \
 MARKET_ID=<id> \
 BET_INDEX=<your_bet_index> \
+npx hardhat run scripts/withdraw-payout.ts --network sepolia
+```
+
+and then
+```bash
+MARKET_CONTRACT=<address> \
+MARKET_ID=<id> \
+BET_INDEX=<your_bet_index> \
 npx hardhat run scripts/withdraw-unsafe.ts --network sepolia
 ```
+
 
 **Parameters:**
 - `BET_INDEX` - Your bet index from step 3
