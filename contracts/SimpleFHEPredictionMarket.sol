@@ -40,6 +40,7 @@ contract SimpleFHEPredictionMarket {
     event MarketCreated(uint256 indexed marketId, string question, uint256 closeTime);
     event BetPlaced(uint256 indexed marketId, uint256 indexed betIndex, address indexed bettor, uint256 escrowAmount);
     event DecryptionRequested(uint256 indexed marketId);
+    event BetDecryptionRequested(uint256 indexed marketId, uint256 indexed betIndex, address indexed bettor);
     event MarketSettled(uint256 indexed marketId, bool winningOutcome, uint64 yesPool, uint64 noPool);
     event PayoutWithdrawn(uint256 indexed marketId, uint256 indexed betIndex, address indexed bettor, uint256 amount);
 
@@ -158,10 +159,10 @@ contract SimpleFHEPredictionMarket {
         
         Bet storage bet = bets[marketId][betIndex];
         
-        // Get decrypted bet details
-        (uint64 stake, bool stakeReady) = FHE.getDecryptResultSafe(bet.encryptedStake);
-        if (!stakeReady) return 0;
+        // Use plaintext escrowAmount (already public) instead of encrypted stake
+        uint256 stake = bet.escrowAmount;
         
+        // Get decrypted bet outcome
         (bool outcome, bool outcomeReady) = FHE.getDecryptResultSafe(bet.encryptedOutcome);
         if (!outcomeReady) return 0;
         
@@ -176,15 +177,16 @@ contract SimpleFHEPredictionMarket {
         
         if (winningPool == 0) return 0;
         
-        // Payout = (stake / winningPool) * losingPool * (1 - fee)
-        uint256 totalPrize = losingPool * (10000 - m.feeBps) / 10000;
-        uint256 payout = (stake * totalPrize) / winningPool;
+        // Payout = stake + (stake / winningPool) * losingPool * (1 - fee)
+        // Cast to uint256 to prevent overflow
+        uint256 totalPrize = uint256(losingPool) * (10000 - m.feeBps) / 10000;
+        uint256 winnings = (stake * totalPrize) / uint256(winningPool);
         
-        return payout;
+        return stake + winnings; // Return original stake + winnings
     }
 
-    /// @notice Withdraw winnings (must request bet decryption first)
-    function withdraw(uint256 marketId, uint256 betIndex) external {
+    /// @notice Step 1: Request decryption of a specific bet's outcome (must be called first)
+    function requestBetDecryption(uint256 marketId, uint256 betIndex) external {
         Market storage m = markets[marketId];
         require(m.settled, "Market not settled");
         
@@ -192,12 +194,61 @@ contract SimpleFHEPredictionMarket {
         require(bet.bettor == msg.sender, "Not your bet");
         require(!bet.withdrawn, "Already withdrawn");
 
-        // Request decryption of this specific bet if not already done
-        FHE.decrypt(bet.encryptedStake);
+        // Request asynchronous decryption of outcome only (stake is already plaintext)
         FHE.decrypt(bet.encryptedOutcome);
+        
+        emit BetDecryptionRequested(marketId, betIndex, msg.sender);
+    }
+
+    /// @notice Step 2: Withdraw winnings (safe - checks if decryption is ready)
+    function withdraw(uint256 marketId, uint256 betIndex) external {
+        Market storage m = markets[marketId];
+        require(m.settled, "Market not settled");
+        
+        Bet storage bet = bets[marketId][betIndex];
+        require(bet.bettor == msg.sender, "Not your bet");
+        require(!bet.withdrawn, "Already withdrawn");
         
         uint256 payout = calculatePayout(marketId, betIndex);
         require(payout > 0, "No payout available");
+        require(marketEscrow[marketId] >= payout, "Insufficient escrow");
+
+        bet.withdrawn = true;
+        marketEscrow[marketId] -= payout;
+
+        (bool success, ) = payable(msg.sender).call{value: payout}("");
+        require(success, "Transfer failed");
+
+        emit PayoutWithdrawn(marketId, betIndex, msg.sender, payout);
+    }
+
+    /// @notice Step 2 Alternative: Unsafe withdraw (reverts if not ready, but tries immediately)
+    function withdrawUnsafe(uint256 marketId, uint256 betIndex) external {
+        Market storage m = markets[marketId];
+        require(m.settled, "Market not settled");
+        
+        Bet storage bet = bets[marketId][betIndex];
+        require(bet.bettor == msg.sender, "Not your bet");
+        require(!bet.withdrawn, "Already withdrawn");
+        
+        // Use unsafe method - will revert if not decrypted yet
+        bool outcome = FHE.getDecryptResult(bet.encryptedOutcome);
+        
+        // Check if this bet won
+        require(outcome == m.winningOutcome, "Bet did not win");
+        
+        // Calculate payout using plaintext values
+        uint256 stake = bet.escrowAmount;
+        uint64 winningPool = outcome ? m.decryptedYes : m.decryptedNo;
+        uint64 losingPool = outcome ? m.decryptedNo : m.decryptedYes;
+        
+        require(winningPool > 0, "No winning pool");
+        
+        // Payout = stake + (stake / winningPool) * losingPool * (1 - fee)
+        uint256 totalPrize = uint256(losingPool) * (10000 - m.feeBps) / 10000;
+        uint256 winnings = (stake * totalPrize) / uint256(winningPool);
+        uint256 payout = stake + winnings;
+        
         require(marketEscrow[marketId] >= payout, "Insufficient escrow");
 
         bet.withdrawn = true;

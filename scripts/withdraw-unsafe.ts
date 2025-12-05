@@ -1,11 +1,16 @@
 import { ethers } from "hardhat";
 
+/**
+ * Unsafe withdrawal - tries immediately without checking if decryption is ready
+ * Will revert with clear error if decryption not complete
+ * Use this to keep trying until decryption completes
+ */
 async function main() {
-  const contractAddress = process.env.MARKET_CONTRACT || "0xAf7a1C0c8FFdAb76BfE73156f78c2E18d248c01e";
+  const contractAddress = process.env.MARKET_CONTRACT || "0xE2C27D3b4CB0Df767a354Efdc621b789b067D32B";
   const marketId = parseInt(process.env.MARKET_ID || process.argv[2] || "0");
   const betIndex = parseInt(process.env.BET_INDEX || process.argv[3] || "0");
 
-  console.log("💰 Withdrawing payout...");
+  console.log("💰 Attempting unsafe withdrawal...");
   console.log("Contract:", contractAddress);
   console.log("Market ID:", marketId);
   console.log("Bet Index:", betIndex);
@@ -20,7 +25,6 @@ async function main() {
   const marketInfo = await contract.getMarketInfo(marketId);
   if (!marketInfo[3]) {
     console.log("\n⚠️  Market is not settled yet!");
-    console.log("   Run: node scripts/settle-market.ts", marketId);
     return;
   }
 
@@ -32,31 +36,9 @@ async function main() {
   console.log("  NO Pool:", ethers.formatEther(pools[1]), "ETH");
   console.log("  Winner:", pools[2] ? "YES" : "NO");
 
-  // Check current payout
-  console.log("\n🔍 Checking if bet is decrypted...");
   try {
-    const payout = await contract.calculatePayout(marketId, betIndex);
-    
-    if (payout === 0n) {
-      console.log("⏳ Individual bet not decrypted yet");
-      console.log("\n🔄 Step 1: Requesting bet decryption from CoFHE MPC network...");
-      
-      const tx = await contract.requestBetDecryption(marketId, betIndex);
-      console.log("   TX:", tx.hash);
-      await tx.wait();
-      console.log("✅ Decryption request sent!");
-      
-      console.log("\n⏰ Wait 60-90 seconds for MPC decryption to complete");
-      console.log("   Then run this command again to complete withdrawal:");
-      console.log(`   MARKET_ID=${marketId} BET_INDEX=${betIndex} MARKET_CONTRACT=${contractAddress} npx hardhat run scripts/withdraw-payout.ts --network sepolia`);
-      return;
-    }
-
-    console.log("✅ Payout available:", ethers.formatEther(payout), "ETH");
-
-    // Withdraw
-    console.log("\n🔄 Step 2: Withdrawing payout...");
-    const tx = await contract.withdraw(marketId, betIndex);
+    console.log("\n🔄 Attempting withdrawal (will revert if decryption not ready)...");
+    const tx = await contract.withdrawUnsafe(marketId, betIndex);
     console.log("Transaction hash:", tx.hash);
 
     const receipt = await tx.wait();
@@ -89,14 +71,23 @@ async function main() {
     console.log("\n💳 Your new balance:", ethers.formatEther(newBalance), "ETH");
 
   } catch (error: any) {
-    if (error.message.includes("No payout available")) {
-      console.log("❌ No payout available for this bet");
-    } else if (error.message.includes("Not your bet")) {
-      console.log("❌ This bet doesn't belong to you");
-    } else if (error.message.includes("Already withdrawn")) {
-      console.log("❌ This bet has already been withdrawn");
+    const errorMsg = error.message.toLowerCase();
+    
+    if (errorMsg.includes("bet did not win")) {
+      console.log("\n❌ This bet lost - only winning bets can withdraw");
+    } else if (errorMsg.includes("not your bet")) {
+      console.log("\n❌ This bet doesn't belong to you");
+    } else if (errorMsg.includes("already withdrawn")) {
+      console.log("\n❌ This bet has already been withdrawn");
+    } else if (errorMsg.includes("no payout") || errorMsg.includes("no winning pool")) {
+      console.log("\n❌ No payout available");
+    } else if (errorMsg.includes("revert") || errorMsg.includes("execution reverted")) {
+      console.log("\n⏳ Bet outcome not decrypted yet by MPC network");
+      console.log("   The decryption is still in progress");
+      console.log("   Try again in 30-60 seconds:");
+      console.log(`   MARKET_ID=${marketId} BET_INDEX=${betIndex} MARKET_CONTRACT=${contractAddress} npx hardhat run scripts/withdraw-unsafe.ts --network sepolia`);
     } else {
-      throw error;
+      console.error("\n❌ Error:", error.message);
     }
   }
 }
