@@ -603,7 +603,6 @@ pnpm hardhat run scripts/withdraw-payout.ts --network eth-sepolia
 pnpm hardhat run scripts/verify-encryption.ts --network eth-sepolia
 ```
 
-**Read detailed proof:** [ENCRYPTION_PROOF.md](./ENCRYPTION_PROOF.md)
 
 **View on Etherscan:**
 - Contract: https://sepolia.etherscan.io/address/0x77958F65c64E0F165A7849B8Daf67eE0824E00C5
