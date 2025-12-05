@@ -111,7 +111,7 @@ cp .env.example .env
 Deploy the SimpleFHEPredictionMarket contract to Sepolia.
 
 ```bash
-pnpm hardhat run scripts/deploy-simple-prediction-market.ts --network eth-sepolia
+npx hardhat run scripts/deploy-simple-prediction-market.ts --network sepolia
 ```
 
 **Output:**
@@ -133,7 +133,7 @@ MARKET_CONTRACT=<address> \
 QUESTION="Will BTC hit 100k in 2025?" \
 DURATION=60 \
 FEE_BPS=200 \
-pnpm hardhat run scripts/create-market.ts --network eth-sepolia
+npx hardhat run scripts/create-market.ts --network sepolia
 ```
 
 **Parameters:**
@@ -165,7 +165,7 @@ MARKET_CONTRACT=<address> \
 MARKET_ID=<id> \
 STAKE_AMOUNT=0.01 \
 OUTCOME=true \
-pnpm hardhat run scripts/place-encrypted-bet.ts --network eth-sepolia
+npx hardhat run scripts/demo-multi-account-betting.ts --network sepolia
 ```
 
 **Parameters:**
@@ -212,7 +212,7 @@ After the market closes, request decryption of pool totals from the CoFHE MPC ne
 ```bash
 MARKET_CONTRACT=<address> \
 MARKET_ID=<id> \
-pnpm hardhat run scripts/request-decryption.ts --network eth-sepolia
+npx hardhat run scripts/request-decryption.ts --network sepolia
 ```
 
 **Requirements:**
@@ -246,7 +246,7 @@ Retrieve decrypted results and determine the winner.
 ```bash
 MARKET_CONTRACT=<address> \
 MARKET_ID=<id> \
-pnpm hardhat run scripts/settle-market.ts --network eth-sepolia
+npx hardhat run scripts/settle-market.ts --network sepolia
 ```
 
 **Requirements:**
@@ -285,7 +285,7 @@ Winners withdraw their proportional share of the losing pool.
 MARKET_CONTRACT=<address> \
 MARKET_ID=<id> \
 BET_INDEX=<your_bet_index> \
-pnpm hardhat run scripts/withdraw-payout.ts --network eth-sepolia
+npx hardhat run scripts/withdraw-unsafe.ts --network sepolia
 ```
 
 **Parameters:**
@@ -605,8 +605,8 @@ pnpm hardhat run scripts/verify-encryption.ts --network eth-sepolia
 
 
 **View on Etherscan:**
-- Contract: https://sepolia.etherscan.io/address/0x77958F65c64E0F165A7849B8Daf67eE0824E00C5
-- Sample Bet TX: https://sepolia.etherscan.io/tx/0x847ed08757bb834279b22dc6f03947a97ababcbcd6bef1d257d2606bf7b3b100
+- Contract: https://sepolia.etherscan.io/address/0x3f53C61e2748413F10d637d70eD1e7Df58A23C5B
+- Sample Bet TX: https://sepolia.etherscan.io/tx/0xbaf98d66a90f9e3d40bb9bf13d7218041d93a7d5bb0da8e193b7e8c606091817
 
 ---
 
@@ -626,7 +626,7 @@ pnpm hardhat run scripts/verify-encryption.ts --network eth-sepolia
 
 - **Name:** `SimpleFHEPredictionMarket`
 - **Lines:** 244
-- **Deployed:** `0x77958F65c64E0F165A7849B8Daf67eE0824E00C5` (Sepolia)
+- **Deployed:** `0x3f53C61e2748413F10d637d70eD1e7Df58A23C5B` (Sepolia)
 - **Functions:** 9 public functions
 - **Events:** 5 events
 - **Optimizations:** viaIR enabled, 200 optimizer runs
@@ -648,16 +648,6 @@ pnpm hardhat run scripts/verify-encryption.ts --network eth-sepolia
 - **Request Decryption:** ~150k gas
 - **Settle Market:** ~100k gas
 - **Withdraw:** ~80k gas
-
----
-
-## 📚 Documentation
-
-- **[SIMPLE_MARKET_GUIDE.md](./SIMPLE_MARKET_GUIDE.md)** - Comprehensive user guide with examples
-- **[ENCRYPTION_PROOF.md](./ENCRYPTION_PROOF.md)** - Technical proof of encryption
-- **[SEPOLIA_TEST_SESSION.md](./SEPOLIA_TEST_SESSION.md)** - Live test results and transactions
-- **[ONCHAIN_DECRYPTION.md](./ONCHAIN_DECRYPTION.md)** - MPC decryption architecture
-- **[README_ORIGINAL.md](./README_ORIGINAL.md)** - Original CoFHE starter documentation
 
 ---
 
@@ -708,20 +698,9 @@ pnpm hardhat run scripts/test-complete-workflow.ts
 
 ### Sepolia Testnet
 
-**Live Contract:** `0x77958F65c64E0F165A7849B8Daf67eE0824E00C5`
+**Live Contract:** `0x3f53C61e2748413F10d637d70eD1e7Df58A23C5B`
 
-**Test Results:**
-- ✅ Market ID 0: 4 bets, 0.057 ETH total, 60-minute duration
-- ✅ Market ID 1: 3 bets, 0.033 ETH total, 5-minute duration, **FULLY SETTLED**
 
-**Verified Transactions:**
-- Deploy: https://sepolia.etherscan.io/address/0x77958F65c64E0F165A7849B8Daf67eE0824E00C5
-- Market 1 Creation: https://sepolia.etherscan.io/tx/0x07069475b8a5ea737d639055959f9781bb9f4c838ec6303dbe99c9abe14186e4
-- Bet 0: https://sepolia.etherscan.io/tx/0x847ed08757bb834279b22dc6f03947a97ababcbcd6bef1d257d2606bf7b3b100
-- Decryption Request: https://sepolia.etherscan.io/tx/0xcacf3875d4b2f8818ded56882c1995aa7e1d562d4b449ce1cc38c2257c08d83d
-- Settlement: https://sepolia.etherscan.io/tx/0x2f6f8ed5d3835d3877a708a10fcb8a04efc617d0c7b149aeeff24aab38a16aad
-
----
 
 ## 🤝 Contributing
 
@@ -755,7 +734,7 @@ MIT License - See LICENSE file for details
 
 - **GitHub:** [Akhil-2310/fhe-pred-market](https://github.com/Akhil-2310/fhe-pred-market)
 - **Contract (Sepolia):** `0x77958F65c64E0F165A7849B8Daf67eE0824E00C5`
-- **Etherscan:** https://sepolia.etherscan.io/address/0x77958F65c64E0F165A7849B8Daf67eE0824E00C5
+- **Etherscan:** https://sepolia.etherscan.io/address/0x3f53C61e2748413F10d637d70eD1e7Df58A23C5B
 - **Fhenix Docs:** https://docs.fhenix.zone
 - **CoFHE Docs:** https://docs.fhenix.zone/docs/devdocs/Working%20With%20CoFHE/cofhejs
 
