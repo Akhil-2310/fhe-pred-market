@@ -2,6 +2,8 @@
 
 A fully privacy-preserving prediction market built with Fully Homomorphic Encryption (FHE) on Fhenix CoFHE, where individual bets remain completely encrypted while the market operates transparently.
 
+## [Video Demo](https://www.loom.com/share/14c126c59634403b8e8b3d5c4fe44af2)
+
 ## 🎯 Problem Statement
 
 Traditional prediction markets face critical privacy challenges:
