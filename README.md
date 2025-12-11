@@ -4,6 +4,8 @@ A fully privacy-preserving prediction market built with Fully Homomorphic Encryp
 
 ## [Video Demo](https://www.loom.com/share/14c126c59634403b8e8b3d5c4fe44af2)
 
+## [Contract Address](https://sepolia.etherscan.io/address/0x3f53C61e2748413F10d637d70eD1e7Df58A23C5B)
+
 ## 🎯 Problem Statement
 
 Traditional prediction markets face critical privacy challenges:
